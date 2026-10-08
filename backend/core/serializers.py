@@ -5,5 +5,6 @@ class DialogSerializer(serializers.ModelSerializer):
         model = Dialog
         fields = [
             'telegram_id', 'name', 'archived', 'unread_count',
-            'id','message', 'is_group', 'is_channel'
+            'id','message', 'is_group', 'is_channel', 'last_message_date'
         ]
+

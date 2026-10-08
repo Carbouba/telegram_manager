@@ -8,4 +8,15 @@ class Dialog(models.Model):
     message = models.TextField(blank=True)
     is_group = models.BooleanField(default=False)
     is_channel = models.BooleanField(default=False)
+    last_message_date = models.DateTimeField(null=True, blank=True)
+
+class Profile(models.Model):
+    user_id = models.IntegerField()
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    username = models.CharField(max_length=255)
+    phone = models.IntegerField()
+    picture = models.ImageField(blank=True, null=True)
+
+
 
