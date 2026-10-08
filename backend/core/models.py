@@ -5,7 +5,7 @@ class Dialog(models.Model):
     name = models.CharField(max_length=255)
     archived = models.BooleanField(default=False)
     unread_count = models.IntegerField(default=0)
-    message = models.TextField(blank=True)
+    message = models.TextField(blank=True, null=True, default="")
     is_group = models.BooleanField(default=False)
     is_channel = models.BooleanField(default=False)
     last_message_date = models.DateTimeField(null=True, blank=True)

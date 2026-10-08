@@ -4,7 +4,7 @@ import asyncio
 import threading
 from decouple import config
 from telethon import TelegramClient
-from core.models import Dialog
+from core.models import Dialog, Profile
 
 API_ID = config("API_ID")
 API_HASH = config("API_HASH")
@@ -35,10 +35,28 @@ async def ensure_connected():
     if not client.is_connected():
         await client.connect()
 
+async def sync_profile():
+    await ensure_connected()
+    me = await client.get_me()
+
+    await Profile.objects.aupdate_or_create(
+        user_id =  me.id,
+        defaults={
+            'first_name': me.first_name,
+            'last_name': me.last_name,
+            'username': me.username,
+            'phone': me.phone,
+        }
+    )
+
 async def sync_dialogs():
     await ensure_connected()
     dialogs = await client.get_dialogs()
     for dialog in dialogs:
+        text_content = ""
+        if dialog.message and getattr(dialog.message, 'message', None):
+            text_content = dialog.message.message or ""
+
         await Dialog.objects.aupdate_or_create(
             telegram_id=dialog.id,
             defaults={
