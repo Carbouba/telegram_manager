@@ -22,33 +22,44 @@ PHONE_NUMBER = config("PHONE_NUMBER")
 client = TelegramClient('session', API_ID, API_HASH)
 
 
+async def ensure_connected():
+    if not client.is_connected():
+        await client.connect()
+
 async def sync_dialogs():
-    async with client:
-        # Recuperation des tous les echanges, grace a la methode 'get_dialogs()',
-        # elle renvoie une liste
-        dialogs = await client.get_dialogs()
-        for dialog in dialogs:
-            db_dialog = Dialog.objects.update_or_create(telegram_id=dialog.id, name=dialog.name,
-                                                        archived=dialog.archived,
-                                                        unread_count=dialog.unread_count, message=dialog.message,
-                                                        is_group=dialog.is_group, is_channel=dialog.is_channel)
+    await ensure_connected()
+    dialogs = await client.get_dialogs()
+
+    for dialog in dialogs:
+        await Dialog.objects.aupdate_or_create(
+            telegram_id=dialog.id,
+            defaults={
+                'name': dialog.name or "Sans nom",
+                'archived': bool(dialog.archived),
+                'unread_count': dialog.unread_count,
+                'message': dialog.message.message if dialog.message else "",
+                'is_group': dialog.is_group,
+                'is_channel': dialog.is_channel
+            }
+        )
 
 async def archive_dialog(telegram_id):
-    async with client:
-        await client.edit_folder(telegram_id, 1)
+    await ensure_connected()
+    entity = await client.get_entity(telegram_id)
+    await client.edit_folder(entity, 1)
 
 async def unarchive_dialog(telegram_id):
-    async with client:
-        await client.edit_folder(telegram_id, 0)
+    await ensure_connected()
+    entity = await client.get_entity(telegram_id)
+    await client.edit_folder(entity, 0)
+
 
 async def delete_dialog(telegram_id):
-    dialog = get_object_or_404(Dialog, id=telegram_id)
-    async with client:
-        await client.delete_dialog(dialog)
-        await asyncio.sleep(5)
+    await ensure_connected()
+    entity = await client.get_entity(telegram_id)
+    await client.delete_dialog(entity)
 
 async def mark_as_read(telegram_id):
-    dialog = get_object_or_404(Dialog, id=telegram_id)
-    message = dialog.message
-    async with client:
-        await client.send_read_acknowledge(dialog, message)
+    dialog = get_object_or_404(Dialog, telegram_id=telegram_id)
+    entity = await client.get_entity(telegram_id)
+    await client.send_read_acknowledge(entity)
